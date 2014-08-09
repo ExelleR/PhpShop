@@ -33,6 +33,8 @@ $email_body = $email_body . "Message: " . $message ;
     }
 
 
+
+
    if (!isset($error_message)){
         // Set PHPMailer to use the sendmail transport
             $email->SetFrom($email,$name);
