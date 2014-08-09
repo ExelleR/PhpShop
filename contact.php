@@ -4,30 +4,65 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 $name = trim($_POST["name"]);
 $email = trim($_POST["email"]);
 $message = trim($_POST["message"]);
-    if($name == "" OR $email == "" OR $message == ""){
-        echo "You must specify a value for the name and email address";
-        exit;
-    }
-    foreach($_POST as $value){
-        if(stripos($value,'Content-Type:') !== FALSE){
-            echo "There was a problem with the information you entered.";
-            exit;
-        }
-
-    }
-    if($_POST["address"] !=""){
-        echo "Your form submission had adn error.";
-        exit;
-    }
 $email_body = "";
-$email_body = $email_body . "Name: " . $name . "\n";
-$email_body = $email_body . "Email: " . $email . "\n";
+$email_body = $email_body . "Name: " . $name . "<br>";
+$email_body = $email_body . "Email: " . $email . "<br>";
 $email_body = $email_body . "Message: " . $message ;
 
+    if($name == "" OR $email == "" OR $message == ""){
+        $error_message =  "You must specify a value for the name and email address and message.";
+    }
 
-//TODO : Send Email
-header("Location: contact.php?status=thanks");
-exit;
+    if(!isset($error_message)){
+        foreach($_POST as $value){
+            if(stripos($value,'Content-Type:') !== FALSE){
+                $error_message =  "There was a problem with the information you entered.";
+            }
+
+        }
+    }
+        if(!isset($error_message) && $_POST["address"] !=""){
+        $error_message =  "Your form submission had adn error.";
+    }
+    require ("inc/phpmailer/PHPMailerAutoload.php");
+
+    $mail = new PHPMailer;
+    if(!isset($error_message) && !$mail ->ValidateAddress($email)){
+
+        $error_message =  "You must specify valid email address.";
+    }
+
+
+   if (!isset($error_message)){
+        // Set PHPMailer to use the sendmail transport
+            $email->SetFrom($email,$name);
+            $address = "orders@shirts4mike.com";
+            $mail->isSendmail();
+        //Set who the message is to be sent from
+            $mail->setFrom('from@example.com', 'First Last');
+        //Set who the message is to be sent to
+            $mail->addAddress($address, 'Shirts 4 Mike');
+
+        //Set the subject line
+            $mail->Subject = "Shirts 4 Mike Contact Form Submission | " . $name;
+        //Read an HTML message body from an external file, convert referenced images to embedded,
+        //convert HTML into a basic plain-text alternative body
+            $mail->msgHTML($email_body);
+
+
+
+        //send the message, check for errors
+       if ($mail->send()) {
+           header("Location: contact.php?status=thanks");
+           exit;
+       }
+        else{
+            $error_message =  "Mailer Error: " . $mail->ErrorInfo;
+            exit;
+        }
+   }
+
+
 }
 ?>
 <?php
@@ -45,8 +80,17 @@ include('inc/header.php');
            <?php if(isset($_GET["status"]) and $_GET["status"] == "thanks"){ ?>
                <p>Thanks for the email! I&rsquo;I'l be in touch shortly.</p>
             <?php }else{ ?>
+               <?php
 
-       <p>I&rsquo;d love to hear from you! Complete the form to send me an email.</p>
+               if(!isset($error_message)){
+                 echo '<p>I&rsquo;d love to hear from you! Complete the form to send me an email.</p>';
+
+               }
+               else{
+                   echo '<p class="message">' . $error_message . '</p>';
+               }
+
+               ?>
           <form method="post" action="contact.php">
            <table>
                <tr>
